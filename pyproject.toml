@@ -1,0 +1,23 @@
+[project]
+name = "simpleresumeagent"
+version = "0.1.0"
+description = "A basic FastAPI application"
+authors = [
+    {name = "User"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi (>=0.128.0,<0.129.0)",
+    "uvicorn[standard] (>=0.40.0,<0.41.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "beautifulsoup4 (>=4.14.3,<5.0.0)",
+    "playwright (>=1.57.0,<2.0.0)",
+    "beanie (>=2.0.1,<3.0.0)",
+    "motor (>=3.7.1,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
