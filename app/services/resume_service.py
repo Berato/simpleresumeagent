@@ -3,10 +3,15 @@ from app.services.llm_extraction_service import LLMExtractionService
 from app.models.resume_model import Resume
 from fastapi import UploadFile
 
+from app.repositories.resume_repository import ResumeRepository
+
 class ResumeService:
     def __init__(self):
         self.pdf_service = PdfService()
         self.llm_service = LLMExtractionService()
+        self.resume_repository = ResumeRepository()
+
+    
 
     async def extract_and_save_resume(self, file_content: bytes) -> Resume:
         """
@@ -31,6 +36,6 @@ class ResumeService:
             content=resume_data,
             original_text=raw_text
         )
-        await resume.save()
+        return await self.resume_repository.create_resume(resume)
         
         return resume

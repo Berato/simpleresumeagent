@@ -7,6 +7,7 @@ from google.adk.models import Gemini
 from google.genai import types
 # from google.genai import types # Unused if we strip it from the f-string, but user might want it. leaving commented or removing.
 from app.models.resume_data import ResumeData
+from app.models.job_description_data import JobDescriptionData
 import logging
 logger = logging.getLogger(__name__)
 import dotenv
@@ -73,4 +74,55 @@ class LLMExtractionService:
             return updated_session.state["resume_data"]
         except Exception as e:
             print(f"Error extracting resume data: {e}")
+            raise e
+            raise e
+
+    async def extract_job_description_data(self, text: str) -> JobDescriptionData:
+        """
+        Extracts structured JobDescriptionData from raw job description text.
+        """
+        if not self.session:
+            await self._ensure_session()
+
+        try:
+            # Reconfigure agent for Job Description? 
+            # Ideally we'd have separate agents or dynamically configure.
+            # For this quick implementation, I will reuse the session/runner pattern 
+            # but ideally we should have a 'JobDescriptionExtractor' agent.
+            # Let's try to just run a prompt expecting the schema.
+            
+            # Note: The agent is initialized with ResumeData schema. 
+            # We need a new agent/runner for JD, or re-init.
+            # Let's create a temporary agent config for this call or a separate instance variable.
+            
+            jd_agent = Agent(
+                name="jd_extractor",
+                model=self.model,
+                description="You are an expert job description parser.",
+                instruction=f"Return only the JSON object in the following format: {json.dumps(JobDescriptionData.model_json_schema())}",
+                output_schema=JobDescriptionData,
+                output_key="jd_data"
+            )
+            
+            # Using a new runner for this specific task to avoid schema conflicts with resume agent
+            jd_runner = Runner(agent=jd_agent, app_name="JDExtractor", session_service=self.session_service)
+            
+            # We need a unique session for this or share? unique is safer.
+            jd_session_id = f"jd_extractor_{self.session_id}"
+            
+            # Ensure session for JD
+            try:
+                await self.session_service.create_session(app_name="JDExtractor", session_id=jd_session_id, user_id=self.user_id)
+            except:
+                pass # Assume exists
+                
+            content = types.Content(role="user", parts=[types.Part(text=text)])
+            async for event in jd_runner.run_async(user_id=self.user_id, session_id=jd_session_id, new_message=content):
+                pass
+                
+            updated_session = await self.session_service.get_session(session_id=jd_session_id, user_id=self.user_id, app_name="JDExtractor")
+            return updated_session.state["jd_data"]
+
+        except Exception as e:
+            print(f"Error extracting JD data: {e}")
             raise e

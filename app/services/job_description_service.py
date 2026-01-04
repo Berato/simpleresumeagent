@@ -1,10 +1,15 @@
 from bs4 import BeautifulSoup
 from app.models.job_description_models import JobDescription, JobDescriptionRequest
+from app.models.job_description_models import JobDescription, JobDescriptionRequest
 from app.services.browser_service import browser_service
+from app.services.llm_extraction_service import LLMExtractionService
+from app.repositories.job_description_repository import JobDescriptionRepository
 
 class JobDescriptionService:
     def __init__(self):
         self.browser_service = browser_service
+        self.llm_service = LLMExtractionService()
+        self.repository = JobDescriptionRepository()
 
     async def extract_job_description(self, job_description_request: JobDescriptionRequest) -> JobDescription:
         """Extract job description using Playwright and BeautifulSoup"""
@@ -20,21 +25,30 @@ class JobDescriptionService:
         if main_content:
             description = main_content.get_text(separator="\n", strip=True)
 
+        # Extract structured data
+        try:
+            structured_data = await self.llm_service.extract_job_description_data(description)
+        except Exception as e:
+            print(f"LLM Extraction failed for JD: {e}")
+            structured_data = None
+
         job_desc = JobDescription(
             url=job_description_request.url,
             title=title,
-            description=description
+            description=description,
+            structured_data=structured_data
         )
 
-        # Store in MongoDB
+        # Store in MongoDB via Repository
         try:
-            await job_desc.insert()
+            await self.repository.create_job_description(job_desc)
         except Exception as e:
             # If it already exists, we might want to update it or just return the existing one
             # For now, let's just log and continue, or fetch existing
-            existing = await JobDescription.find_one(JobDescription.url == job_description_request.url)
+            existing = await self.repository.get_job_description_by_url(job_description_request.url)
             if existing:
+                # Update existing with new data if applicable? 
+                # For now just return existing
                 job_desc = existing
-
+        
         return job_desc
-    

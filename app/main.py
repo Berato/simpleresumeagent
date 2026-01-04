@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from app.routes import hello
 from app.core.config import settings
 from app.routes import job_description_routes
 
@@ -27,7 +26,6 @@ async def lifespan(app: FastAPI):
 def get_application() -> FastAPI:
     _app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
-    _app.include_router(hello.router, prefix="/hello", tags=["hello"])
     _app.include_router(job_description_routes.router, tags=["job-descriptions"])
     _app.include_router(resume_routes.router, prefix="/api/resumes", tags=["resumes"])
 
