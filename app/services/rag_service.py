@@ -9,9 +9,58 @@ from app.models.job_description_data import JobDescriptionData
 class RagService:
     def __init__(self):
         # Ephemeral client for now as requested
+        # NOTE: Could potentially move to weaviate or pinecone for production. ChromaDB is fairly easy and straightforward to implement.
         self.client = chromadb.Client()
         self.resume_repository = ResumeRepository()
         self.jd_repository = JobDescriptionRepository()
+
+    def query_resume(self, resume_id: str, queries: List[str], top_k: int = 4) -> List[Dict]:
+        """
+        Query a specific resume collection for relevant information.
+        resume_id: Identifies the specific Collection to search (e.g. resume_123).
+                   The query runs against ALL documents (chunks) in that collection.
+        """
+        collection_name = f"resume_{resume_id}"
+        try:
+            collection = self.client.get_collection(name=collection_name)
+        except ValueError:
+            # Collection might not exist if resume wasn't processed or ID is wrong
+            return []
+
+        results = collection.query(
+            query_texts=queries, 
+            n_results=top_k, 
+            include=['documents', 'metadatas', 'distances']
+        )
+        
+        resume_parts = []
+        # results['documents'] is a list of lists (one list per query in 'queries')
+        for doc, meta, score in zip(results.get('documents', []), results.get('metadatas', []), results.get('distances', [])):
+            resume_parts.append({"document": doc, "metadata": meta, "score": score})
+            
+        return resume_parts
+
+    def query_job_description(self, jd_id: str, queries: List[str], top_k: int = 10) -> List[Dict]:
+        """
+        Query a specific job description collection for relevant information.
+        """
+        collection_name = f"job_description_{jd_id}"
+        try:
+            collection = self.client.get_collection(name=collection_name)
+        except ValueError:
+            return []
+
+        results = collection.query(
+            query_texts=queries, 
+            n_results=top_k, 
+            include=['documents', 'metadatas', 'distances']
+        )
+        
+        jd_parts = []
+        for doc, meta, score in zip(results.get('documents', []), results.get('metadatas', []), results.get('distances', [])):
+            jd_parts.append({"document": doc, "metadata": meta, "score": score})
+            
+        return jd_parts
     
     async def store_resume(self, resume_id: str) -> str:
         """
