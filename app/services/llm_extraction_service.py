@@ -38,6 +38,7 @@ class LLMExtractionService:
 
         # Create a session service
         self.session_service = InMemorySessionService()
+        # Session needs to be awaited so this happens in a latet step.
         self.session = None
         self.runner = Runner(agent=self.agent, app_name=self.app_name, session_service=self.session_service)
 

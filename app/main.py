@@ -6,6 +6,7 @@ from app.routes import job_description_routes
 from app.services.browser_service import browser_service
 from app.services.db_service import db_service
 from app.routes import resume_routes
+from app.routes import cover_letter_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,6 +29,7 @@ def get_application() -> FastAPI:
 
     _app.include_router(job_description_routes.router, tags=["job-descriptions"])
     _app.include_router(resume_routes.router, prefix="/api/resumes", tags=["resumes"])
+    _app.include_router(cover_letter_routes.router, prefix="/api/cover-letters", tags=["cover-letters"])
 
     @_app.get("/")
     def root():

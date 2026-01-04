@@ -3,6 +3,7 @@ from beanie import init_beanie
 from app.core.config import settings
 from app.models.job_description_models import JobDescription
 from app.models.resume_model import Resume
+from app.models.cover_letter_model import CoverLetter
 from typing import Optional
 import logging
 
@@ -18,7 +19,7 @@ class DBService:
             logger.info("Initializing Database Service...")
             self._client = AsyncIOMotorClient(settings.MONGODB_URL)
             # Add all Beanie document models here
-            document_models = [JobDescription, Resume]
+            document_models = [JobDescription, Resume, CoverLetter]
             await init_beanie(database=self._client.get_default_database(), document_models=document_models)
             logger.info("Database Service initialized successfully.")
 
